@@ -1,7 +1,7 @@
 # Class Diagram – SyncSketch
 
 ## Overview
-The Class Diagram delineates the static structural blueprint of the SyncSketch backend system. It rigorously applies the Clean Layered Architecture methodology, displaying exactly how domain entities interact, how services process business logic, and how physical database queries are abstracted. The diagram is strongly biased toward an enterprise-level, Object-Oriented backend evaluation standard.
+The Class Diagram delineates the static structural blueprint of the SyncSketch backend system. It rigorously applies the Clean Layered Architecture methodology, displaying exactly how domain entities interact, how services process business logic, and how physical database queries are abstracted. The diagram adheres to enterprise-level, Object-Oriented backend standards.
 
 ## Class Diagram
 
