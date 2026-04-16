@@ -7,39 +7,35 @@ The Entity-Relationship (ER) diagram visualizes the structural schema and relati
 ```mermaid
 erDiagram
     User {
-        String id PK
-        String email UNIQUE
-        String password
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string email
+        string password
+        datetime createdAt
+        datetime updatedAt
     }
-
     Board {
-        String id PK
-        String title
-        String ownerId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string ownerId FK
+        datetime createdAt
+        datetime updatedAt
     }
-
     BoardMember {
-        String id PK
-        String boardId FK
-        String userId FK
-        Enum role "OWNER, EDITOR, VIEW"
-        DateTime joinedAt
+        string id PK
+        string boardId FK
+        string userId FK
+        string role
+        datetime joinedAt
     }
-
     BoardSnapshot {
-        String id PK
-        String boardId FK
-        Json strokes
-        DateTime updatedAt
+        string id PK
+        string boardId FK
+        json strokes
+        datetime updatedAt
     }
 
     User ||--o{ Board : "owns"
     User ||--o{ BoardMember : "is member of"
-    
     Board ||--o{ BoardMember : "has members"
     Board ||--o{ BoardSnapshot : "has state snapshot"
 ```
