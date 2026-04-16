@@ -1,7 +1,7 @@
 # Class Diagram – SyncSketch
 
 ## Overview
-The Class Diagram delineates the static structural blueprint of the SyncSketch backend system. It rigorously applies the Clean Layered Architecture methodology, displaying exactly how domain entities interact, how services process business logic, and how physical database queries are abstracted. The diagram adheres to enterprise-level, Object-Oriented backend standards.
+The Class Diagram delineates the static structural blueprint of the SyncSketch backend system. It rigorously applies the **Clean Layered Architecture** methodology, displaying how domain entities interact, how services process business logic, and how physical database queries are abstracted through the Repository pattern.
 
 ## Class Diagram
 
@@ -9,173 +9,134 @@ The Class Diagram delineates the static structural blueprint of the SyncSketch b
 classDiagram
     direction TB
     
-    %% Base Classes
-    class BaseRepository~T~ {
-        <<abstract>>
-        +findById(id: String) T
-        +find(query: Object) List~T~
-        +create(data: Object) T
-        +update(id: String, data: Object) T
-        +delete(id: String) void
+    %% Base Layer
+    class IUserRepository {
+        <<interface>>
+        +findById(id: String) User
+        +findByEmail(email: String) User
     }
-
-    class DrawingTool {
-        <<abstract>>
-        +color: String
-        +size: Number
-        +draw(x: Number, y: Number)* void
-    }
-
-    class Pencil {
-        +draw(x: Number, y: Number) void
-    }
-
-    class Eraser {
-        +draw(x: Number, y: Number) void
-    }
-
-    DrawingTool <|-- Pencil
-    DrawingTool <|-- Eraser
 
     %% Repositories
     class UserRepository {
+        -prisma: PrismaClient
+        +findById(id: String) User
         +findByEmail(email: String) User
     }
     class BoardRepository {
-        +findUserBoards(userId: String) List~Board~
+        -prisma: PrismaClient
+        +getBoardWithMembers(id: String) Board
+        +saveBoard(data: Object) Board
     }
     class DrawingRepository {
-        +getBoardEvents(boardId: String) List~DrawingEvent~
-        +saveEvent(event: DrawingEvent) DrawingEvent
+        -prisma: PrismaClient
+        +getSnapshot(boardId: String) Snapshot
+        +saveSnapshot(boardId: String, strokes: Json) void
     }
 
-    BaseRepository <|-- UserRepository
-    BaseRepository <|-- BoardRepository
-    BaseRepository <|-- DrawingRepository
+    UserRepository ..|> IUserRepository
 
     %% Entities/Models
     class User {
         +id: String
-        +username: String
         +email: String
-        +passwordHash: String
-        +createdAt: Date
+        +password: String
     }
 
     class Board {
         +id: String
         +title: String
         +ownerId: String
-        +createdAt: Date
-        +updatedAt: Date
+        +members: List~BoardMember~
     }
 
     class BoardMember {
-        +id: String
-        +boardId: String
         +userId: String
+        +boardId: String
         +role: String
-        +joinedAt: Date
-    }
-
-    class DrawingEvent {
-        +id: String
-        +boardId: String
-        +userId: String
-        +eventType: String
-        +data: Object
-        +timestamp: Date
     }
 
     %% Services
     class AuthService {
-        -userRepository: UserRepository
+        -userRepository: IUserRepository
         +register(data: Object) String
         +login(credentials: Object) String
-        +validateToken(token: String) User
+        +getProfile(userId: String) User
     }
 
     class BoardService {
         -boardRepository: BoardRepository
-        +createBoard(data: Object) Board
+        -userRepository: IUserRepository
+        +createBoard(userId: String, title: String) Board
         +getBoardDetails(boardId: String, userId: String) Board
-        +addMember(boardId: String, userId: String, role: String) void
+        +inviteMember(boardId: String, email: String) void
     }
 
     class DrawingService {
         -drawingRepository: DrawingRepository
-        +saveDrawEvent(eventData: Object) DrawingEvent
-        +getHistory(boardId: String) List~DrawingEvent~
+        -boardService: BoardService
+        -stateManager: BoardStateManager
+        +getHistory(boardId: String, userId: String) List
+        +saveStroke(boardId: String, stroke: Object) void
         +handleUndo(boardId: String, userId: String) void
     }
 
-    %% Controllers
+    class BoardStateManager {
+        -boards: Map~String, BoardState~
+        +getBoard(id: String) BoardState
+        +syncToDb() void
+    }
+
+    %% Controllers & Transport
     class AuthController {
         -authService: AuthService
-        +register(req, res) void
-        +login(req, res) void
     }
 
     class BoardController {
         -boardService: BoardService
-        +createBoard(req, res) void
-        +getBoard(req, res) void
-        +shareBoard(req, res) void
     }
     
     class SocketManager {
         -drawingService: DrawingService
-        -authService: AuthService
-        +initialize(io: Server) void
+        -boardService: BoardService
         +handleConnection(socket: Socket) void
-        +handleDrawEvent(socket: Socket, data: Object) void
-        +handleJoinRoom(socket: Socket, boardId: String) void
+        +handleDraw(socket: Socket, data: Object) void
     }
 
-    %% Associations & Dependencies
-    AuthController --> AuthService : Uses
-    BoardController --> BoardService : Uses
-    SocketManager --> DrawingService : Uses
-    SocketManager --> AuthService : Uses
+    %% Associations
+    AuthController --> AuthService
+    BoardController --> BoardService
+    SocketManager --> DrawingService
+    SocketManager --> BoardService
     
-    AuthService --> UserRepository : Injects
-    BoardService --> BoardRepository : Injects
-    DrawingService --> DrawingRepository : Injects
-
-    UserRepository --> User : Manages
-    BoardRepository --> Board : Manages
-    DrawingRepository --> DrawingEvent : Manages
+    AuthService --> IUserRepository
+    BoardService --> BoardRepository
+    BoardService --> IUserRepository
+    DrawingService --> DrawingRepository
+    DrawingService --> BoardStateManager
     
-    Board "1" *-- "*" BoardMember : Contains
-    Board "1" *-- "*" DrawingEvent : Has
+    BoardStateManager "1" *-- "many" Board : Manages
 ```
 
 ## Layer Responsibilities
 
 | Layer / Component | Examples | Responsibilities |
 |---|---|---|
-| **Controllers** | `AuthController`, `BoardController` | Intercept HTTP REST requests, parse JSON payloads, inject dependencies to services, output HTTP JSON responses natively. They hold strictly zero complex algorithm logic. |
-| **Services** | `AuthService`, `DrawingService` | Application core boundary. Encapsulates advanced algorithms, enforces RBAC logic, orchestrates cross-repository queries, maps domain rules. |
-| **Repositories** | `BaseRepository`, `UserRepository` | Limits Mongoose footprint. Provides an abstracted bridge masking low-level generic Database I/O. Exposes secure methods avoiding direct DB injections. |
-| **Real-Time Transport**| `SocketManager` | Parallel to REST controllers, it parses emitted socket Events mapping connection validations into respective Services guaranteeing multiplexed network capabilities. |
+| **Controllers** | `AuthController`, `BoardController` | Entry points for REST APIs. Parse request params, call services, and return HTTP responses. |
+| **Services** | `AuthService`, `DrawingService` | Application core boundary. Handles business rules, security checks, and orchestrates repository calls. |
+| **Repositories** | `UserRepository`, `DrawingRepository` | Direct interaction with **Prisma ORM**. Abscracts raw SQL/DB logic from the rest of the application. |
+| **State Manager** | `BoardStateManager` | Memory-management layer. Keeps active boards in a high-speed Map for real-time performance. |
 
 ## Design Patterns in the Class Diagram
 
-| Pattern | Component Applied | Explanation / Purpose |
+| Pattern | Component Applied | Purpose |
 |---|---|---|
-| **Repository Pattern** | Repositories (`UserRepository`, etc.) | Fully standardizes NoSQL constraints ensuring that HTTP Services never handle raw Mongoose logic bridging directly towards decoupling bounds. |
-| **Service Layer Pattern**| Services (`AuthService`, etc.) | Identifies explicit boundaries for encapsulating intense application algorithms apart from superficial Controller configurations. |
-| **Command Pattern** | `DrawingEvent` / `DrawingService` | Structures canvas actions sequentially permitting a continuous event ledger allowing advanced Undo/Redo reconstruction possibilities. |
-| **Singleton Pattern** | `SocketManager` | Guarantees an isolated unified TCP multiplexing class securing identical memory-references throughout server process runtimes. |
+| **Repository Pattern** | `UserRepository`, etc. | Decouples business logic from the specific database implementation (SQL/ORM). |
+| **Dependency Injection**| Services & Controllers | Repositories and Services are injected via constructors (Inversion of Control), facilitating unit testing. |
+| **State Pattern** | `BoardStateManager` | Manages the lifecycle of boards in memory (Active vs. Hibernating). |
+| **Facade Pattern** | `SocketManager` | Provides a unified entry point for all WebSocket-based drawing and room logic. |
 
-## OOP Principles Demonstrated
+## Dependency Flow
+The architecture follows a strict **unidirectional dependency flow**:
+`Controllers/Sockets` -> `Services` -> `Repositories` -> `Database`.
 
-| Principle | Reflection in Diagram | Explanation |
-|---|---|---|
-| **Encapsulation** | Protected Props (e.g., `-userRepository`) | Restricts internal Service logic bindings keeping dependency injection hidden avoiding variable overwrites preventing runtime corruptions. |
-| **Abstraction** | `BaseRepository`, `DrawingTool` | Shields complex document retrieval implementations natively exposing generalized methods like `findById(id)`. |
-| **Inheritance** | `Pencil` extending `DrawingTool` | Descendents immediately acquire foundational logic (`color`, `size`) removing duplicated code significantly cutting operational redundancies. |
-| **Polymorphism** | Overridden `draw(x, y)` | Rest endpoints route generic `draw()` operations dynamically contextualizing behavior according to instantiated target (Eraser vs Pencil) sans complex `if-else` branching logic. |
-
-## Dependency Flow Explanation
-The diagram maps a directed graph representing dependency injection. `AuthController` references `AuthService`, which internally relies on `UserRepository` injected into its constructor. This unidirectional flow ensures a scalable architecture that complies with the Dependency Inversion Principle, facilitating rapid mock injection for robust automated Unit Testing.
+Higher-level modules (Services) depend on abstractions (`IUserRepository`) rather than concrete implementations, following the **Dependency Inversion Principle**. This ensures that the system remains modular, testable, and maintainable as it scales.

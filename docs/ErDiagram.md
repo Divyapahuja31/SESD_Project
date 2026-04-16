@@ -1,82 +1,73 @@
 # ER Diagram – SyncSketch
-
 ## Overview
-The Entity-Relationship (ER) diagram visualizes the structural schema and relationships inherent to the SyncSketch NoSQL database architecture. Built heavily targeting MongoDB configurations, it showcases a normalized core bridging to strongly-nested Event structures to facilitate fast document retrieval while heavily indexing relational constraints to ensure structural integrity across users, boards, permissions, and session timelines.
+The Entity-Relationship (ER) diagram visualizes the structural schema and relationships inherent to the SyncSketch Relational Database architecture. Built targeting **PostgreSQL**, it utilizes a normalized relational model managed by **Prisma ORM**, ensuring strict data integrity, referential constraints, and high-performance querying for collaborative workspaces.
 
 ## ER Diagram
 
 ```mermaid
 erDiagram
-    users {
-        ObjectId _id PK
-        string username
-        string email
-        string password_hash
-        datetime created_at
-        datetime updated_at
+    User {
+        String id PK
+        String email UNIQUE
+        String password
+        DateTime createdAt
+        DateTime updatedAt
     }
 
-    boards {
-        ObjectId _id PK
-        string title
-        ObjectId owner_id FK
-        datetime created_at
-        datetime updated_at
+    Board {
+        String id PK
+        String title
+        String ownerId FK
+        DateTime createdAt
+        DateTime updatedAt
     }
 
-    board_members {
-        ObjectId _id PK
-        ObjectId board_id FK
-        ObjectId user_id FK
-        string role "ENUM('owner', 'editor', 'viewer')"
-        datetime joined_at
+    BoardMember {
+        String id PK
+        String boardId FK
+        String userId FK
+        Enum role "OWNER, EDITOR, VIEW"
+        DateTime joinedAt
     }
 
-    drawing_events {
-        ObjectId _id PK
-        ObjectId board_id FK
-        ObjectId user_id FK
-        string event_type "ENUM('draw', 'erase', 'clear')"
-        json draw_data
-        datetime timestamp
+    BoardSnapshot {
+        String id PK
+        String boardId FK
+        Json strokes
+        DateTime updatedAt
     }
 
-    users ||--o{ boards : "owns"
-    users ||--o{ board_members : "is part of"
-    users ||--o{ drawing_events : "creates"
+    User ||--o{ Board : "owns"
+    User ||--o{ BoardMember : "is member of"
     
-    boards ||--o{ board_members : "has"
-    boards ||--o{ drawing_events : "contains"
+    Board ||--o{ BoardMember : "has members"
+    Board ||--o{ BoardSnapshot : "has state snapshot"
 ```
 
-## Table Summary & Key Indexes
+## Table Summary & Key Constraints
 
-| Table Name | Purpose | Key Fields | Relationships / Keys | Key Indexes |
-|---|---|---|---|---|
-| **users** | Centralized vault managing secure authentication bounding profiles. | `username`, `email`, `password_hash` | PK: `_id`<br>1:M with boards, board_members, events | Unique Index on `email` to guarantee distinct accounts. |
-| **boards** | Represents the overarching digital workspace isolating targeted spaces. | `title`, `created_at`, `updated_at` | PK: `_id`<br>FK: `owner_id` (refs users)<br>1:M downwards | Compound Index on `owner_id` & `created_at`. |
-| **board_members** | Normalized Junction seamlessly managing explicit localized RBAC matrix limits. | `role` (ENUM: owner, editor, viewer) | PK: `_id`<br>FK: `board_id`, `user_id` | Compound Unique Index on `board_id` + `user_id`. |
-| **drawing_events** | Append-only ledger building complete BSON histories enabling deterministic render limits. | `event_type`, `draw_data` (JSON) | PK: `_id`<br>FK: `board_id`, `user_id` | Compound Performance Index mapped precisely on `board_id` + `timestamp`. |
+| Table Name | Purpose | Key Fields | Relationships |
+|---|---|---|---|
+| **User** | Manages authenticated user profiles and secure credentials. | `email`, `password` | 1:M with Board, BoardMember |
+| **Board** | Represents an isolated digital workspace. | `title`, `ownerId` | M:1 with User (Owner), 1:M with Members/Snapshots |
+| **BoardMember** | Junction table managing RBAC (Role-Based Access Control). | `role` (OWNER, EDITOR, VIEW) | M:M bridge between User and Board |
+| **BoardSnapshot** | Stores the authoritative "current state" of a board as a JSON blob. | `strokes` (JSON) | 1:1 (Logical) with Board |
 
 ## Database Design Strategy
-SyncSketch applies a hybrid approach mapping RDBMS-like constrained normalizations across primary meta-documents (`users`, `boards`) while leveraging MongoDB’s flexible BSON document advantages for vast, append-only logs (`drawing_events`). Mapping data optimally ensures rendering an active canvas calculates in mere milliseconds while retaining extensive role authorization capabilities.
+SyncSketch moved away from granular event logging to a **Snapshot-Based Persistence** model. This architectural shift ensures that even with thousands of simultaneous draw events, the database only performs writes periodically (or when a board becomes inactive), radically improving scalability and reducing I/O wait times.
 
 ## Database Core Definitions
 
-### Primary Keys & Foreign Keys Explanation
-Each structured collection mandates a strictly generated `.ObjectId` generated cryptographically natively by MongoDB instances bridging `_id` markers to guarantee guaranteed 12-byte alphanumeric singularity preventing collision anomalies. Constraints like `owner_id`, `board_id`, and `user_id` hold strictly nested `ObjectId` references mapped logically. Mongoose `populate()` hooks utilize these mapped markers efficiently to aggregate virtualized nested BSON documents.
+### Primary Keys & Foreign Keys
+Every table uses a **UUID (Universally Unique Identifier)** as a primary key to prevent predictable ID enumeration and ensure uniqueness across distributed systems. Referential integrity is strictly enforced at the database level via Foreign Key constraints.
+
+### The Snapshot Model
+Instead of a `drawing_events` table that grows infinitely, we use the `BoardSnapshot` table. This stores the entire canvas state as a structured JSON object. 
+- **Retrieval**: When a user joins a board, the backend fetches the single latest snapshot.
+- **Save**: The backend memory manager flushes the in-memory board state to this table every 50 strokes or 30 seconds.
 
 ### Indexing Strategy
-To endure heavy I/O operations from rapid simultaneous concurrent socket broadcasting, compound indexing algorithms prioritize sorting on `board_id` + `timestamp` configurations allowing instantaneous ascending retrieval mechanisms. 
+To optimize performance, we maintain unique indexes on `User.email` and a compound unique index on `BoardMember(boardId, userId)` to prevent duplicate memberships.
 
-### JSON Drawing Data Field Explanation
-The `draw_data` field adopts an abstract `JSON` / Object signature allowing the backend system to remain relatively schema-agnostic to complex front-end specific drawing structures (bounding boxes, bezier curve coordinates, base64 asset renderings).
-
-### Relationship Mapping
-Normalizing the `board_members` essentially unwraps the complex Many-To-Many relationship between `users` accessing multiple `boards` without mutating primary core object configurations. Multiple `drawing_events` linearly aggregate recursively upwards demonstrating strong One-to-Many Board dependency mappings.
-
-### Data Integrity Considerations
-Backend Domain validations natively intercept invalid Foreign Key constraints prior to database mutation preventing ghost events mapped strictly toward detached boards bypassing potential unhandled cascading failure anomalies.
-
-### Scalability Considerations for MongoDB
-The append-only heavy `drawing_events` infrastructure perfectly mirrors architectural sharding paradigms allowing eventual horizontal partitioning distributions optimizing massive payload read/write clusters avoiding latency degradation.
+### Scalability Considerations
+By using PostgreSQL with Prisma, we benefit from connection pooling and strongly-typed queries. The snapshot model allows the database to remain lean and performant even as the user base grows, as we are no longer storing millions of individual coordinate points.

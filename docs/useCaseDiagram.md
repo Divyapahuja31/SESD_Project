@@ -1,7 +1,7 @@
 # Use Case Diagram – SyncSketch
 
 ## Overview
-The Use Case Diagram for SyncSketch illustrates the high-level functional requirements of the system and maps out how different categories of users interact with the platform. It strictly divides system interactions based on structural Role-Based Access Control (RBAC), mapping precise permissions to appropriate user profiles.
+The Use Case Diagram for SyncSketch illustrates the high-level functional requirements of the platform. It defines how users interact with the collaborative environment based on a strict **Role-Based Access Control (RBAC)** model, ensuring that permissions are mapped precisely to user profiles.
 
 ## Use Case Diagram
 
@@ -27,9 +27,9 @@ flowchart LR
         JoinBoard((Join Board))
         Draw((Draw))
         UndoRedo((Undo/Redo))
-        ShareBoard((Share Board))
+        InviteMember((Invite Member))
         ManagePerms((Manage Permissions))
-        SaveBoard((Save Board))
+        SaveSnapshot((Save Snapshot))
         ViewBoard((View Board))
         
         User --> Register
@@ -37,14 +37,13 @@ flowchart LR
         User --> CreateBoard
     
         Owner --> DeleteBoard
-        Owner --> ShareBoard
+        Owner --> InviteMember
         Owner --> ManagePerms
-        Owner --> SaveBoard
+        Owner --> SaveSnapshot
     
         Editor --> JoinBoard
         Editor --> Draw
         Editor --> UndoRedo
-        Editor --> SaveBoard
         Editor --> ViewBoard
     
         Viewer --> JoinBoard
@@ -56,29 +55,28 @@ flowchart LR
 
 | Actor | Type | Description |
 |---|---|---|
-| **User** | Base | The foundational actor representing any authenticated individual on the platform. Capable of engaging with global system endpoints (Auth and Board Instantiation). |
-| **Owner** | Inherited | Transcends standard privileges representing the structural creator of a target whiteboard. Holds absolute administrative sovereignty. |
-| **Editor** | Inherited | An invited peripheral participant holding specific modification rights. Bounded fully by constraints mapping their write-access towards manipulating canvas strokes. |
-| **Viewer** | Inherited | A restricted participant authorized specifically for read-only tracking. Connects natively to socket spaces without any broadcasting ability. |
+| **User** | Base | Any authenticated individual. Can create boards and manage their own profile. |
+| **Owner** | Inherited | The creator of a specific board. Holds administrative sovereignty, including the ability to delete the board and invite others. |
+| **Editor** | Inherited | An invited participant with write-access. Can contribute to the canvas and perform undo/redo actions. |
+| **Viewer** | Inherited | A passive participant. Can view the live board in real-time but cannot modify the canvas. |
 
 ## Use Case Descriptions
 
-| Use Case | Associated Actor(s) | Description |
+| Use Case | Actor(s) | Description |
 |---|---|---|
-| **Register** | User | Issue cryptographic credentials yielding an authenticated profile on the core application. |
-| **Login** | User | Authorize identity ensuring retrieval of stateless JWT configurations for ongoing communication multiplexing. |
-| **Create Board** | User | Instantiate a blank spatial directory mapped towards WebSocket bindings. Grants instant "Owner" privileges to requester. |
-| **Delete Board** | Owner | Exterminate all BSON events traversing related namespaces ensuring complete obliteration of targeted history. |
-| **Share Board** | Owner | Generate valid secure tokens inviting adjacent Users towards overlapping spaces securely. |
-| **Manage Perms** | Owner | Overload inherited bounds upgrading User constraints (Viewer -> Editor) guaranteeing precise canvas oversight. |
-| **Save Board** | Owner, Editor | Explicitly execute robust BSON snapshots guaranteeing complex continuous stroke shapes persist flawlessly. |
-| **Join Board** | Editor, Viewer | Upgrade underlying HTTP protocols entering a localized WebSocket Namespace/Room. |
-| **Draw** | Editor | Continuously transmit vectorized coordinate payload structures mutating concurrent visual representations. |
-| **Undo/Redo** | Editor | Systematically rollback specific Event Commands within chronological bounds tracking prior states. |
-| **View Board** | Editor, Viewer | Asynchronously consume spatial multiplex payloads enabling continuous, sub-millisecond front-end canvas representations. |
+| **Register** | User | Create a new profile with secure credentials stored in PostgreSQL. |
+| **Login** | User | Authenticate to receive a JWT for secure REST and WebSocket access. |
+| **Create Board** | User | Initialize a new drawing workspace and become its primary Owner. |
+| **Delete Board** | Owner | Permanently remove the board and all its associated snapshots from the database. |
+| **Invite Member** | Owner | Send an invitation to another user to join the board as an Editor or Viewer. |
+| **Save Snapshot** | Owner | Trigger an authoritative save of the current in-memory canvas state to PostgreSQL. |
+| **Join Board** | Editor, Viewer | Authenticate into a specific WebSocket Room to receive real-time updates. |
+| **Draw** | Editor | Broadcast coordinate payloads (pencil, shapes) to all room participants. |
+| **Undo/Redo** | Editor | Revert or re-apply recent strokes using the in-memory board state. |
+| **View Board** | Editor, Viewer | Subscribe to the real-time drawing stream with sub-millisecond latency. |
 
-## Role-Based Access Explanation
-The system enforces strict RBAC to ensure data integrity and security within collaborative sessions. While all roles inherit fundamental identifying characteristics from the base `User`, their bounded contexts differ significantly. The `Owner` exercises total control over the board's lifecycle and membership matrix. The `Editor` operates with write constraints, restricted solely to manipulating drawing objects. The `Viewer` is entirely passive, functioning essentially as a real-time HTTP/WebSocket listener without broadcast privileges.
+## Role-Based Access Control (RBAC)
+The architecture ensures that sensitive actions (like inviting members or clearing a board) are strictly limited to the **Owner**. This is enforced through dedicated middleware on the backend and hardened Auth Guards on the frontend, ensuring that regardless of URL manipulation, only authorized users can perform state-altering actions.
 
-## System Boundary Explanation
-The system boundary defines the core collaborative platform, encapsulating all functionalities related to board management, real-time drawing synchronization, and security assertions. External systems (like third-party OAuth providers or external databases) reside outside this boundary. The actors exist externally and interact with the system via defined interface boundaries (REST endpoints and WebSocket events).
+## Real-Time Synchronization Logic
+Unlike traditional static applications, the "Draw" and "View" use cases operate through a high-speed WebSocket pipeline. This ensures that the system boundary remains responsive even under heavy concurrent loads, as coordinate data bypasses standard HTTP overhead to reach all participants instantly.
