@@ -31,7 +31,7 @@ export class SocketManager {
   }
 
   private initializeMiddleware(): void {
-    this.io.use((socket, next) => {
+    this.io.use((socket: Socket, next: (err?: Error) => void) => {
       const token = socket.handshake.auth.token;
 
       if (!token) {
