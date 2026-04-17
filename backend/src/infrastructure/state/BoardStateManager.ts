@@ -58,7 +58,7 @@ export class BoardStateManager {
     const state = this.boards.get(boardId);
     if (!state) return null;
 
-    const lastIdx = state.strokes.findLastIndex((s) => s.userId === userId);
+    const lastIdx = state.strokes.findLastIndex((s: StrokeRecord) => s.userId === userId);
     if (lastIdx === -1) return null;
 
     const deletedStroke = state.strokes.splice(lastIdx, 1)[0];
