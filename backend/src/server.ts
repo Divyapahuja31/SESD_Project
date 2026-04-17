@@ -23,6 +23,11 @@ const httpServer = createServer(app);
 app.use(cors());
 app.use(express.json());
 
+// Health check route so the browser doesn't show "Cannot GET /"
+app.get("/", (req, res) => {
+  res.status(200).json({ status: "success", message: "SyncSketch API is running beautifully! 🚀" });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/boards", boardRouter);
 
