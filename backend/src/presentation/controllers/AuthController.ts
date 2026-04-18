@@ -15,7 +15,7 @@ export class AuthController {
 
       const { email, password } = parsed.data;
       const result = await this.authService.register(email, password);
-      res.status(201).json({ message: "User registered successfully", token: result.token });
+      res.status(201).json({ message: "User registered successfully", token: result.token, user: { id: result.id, email: result.email } });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message === "User with this email already exists") {
@@ -36,7 +36,7 @@ export class AuthController {
 
       const { email, password } = parsed.data;
       const result = await this.authService.login(email, password);
-      res.status(200).json({ message: "Login successful", token: result.token });
+      res.status(200).json({ message: "Login successful", token: result.token, user: { id: result.id, email: result.email } });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message === "Invalid email or password") {
@@ -49,8 +49,12 @@ export class AuthController {
 
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user.userId;
-      const profile = await this.authService.getProfile(userId);
+      const user = (req as any).user;
+      if (!user || !user.userId) {
+        res.status(401).json({ error: "No valid artist session detected" });
+        return;
+      }
+      const profile = await this.authService.getProfile(user.userId);
       res.status(200).json(profile);
     } catch (error) {
       next(error);
