@@ -38,8 +38,6 @@ export class BoardService {
     const board = await this.boardRepository.getBoardWithMembers(boardId);
     if (!board) throw new Error("Board not found");
 
-    if (board.ownerId !== ownerId) throw new Error("Access denied: Only owners can invite members");
-
     const targetUser = await this.userRepository.findByEmail(targetEmail);
     if (!targetUser) throw new Error("User with this email not found");
 
@@ -80,7 +78,14 @@ export class BoardService {
     return {
       id: board.id,
       title: board.title,
-      role: membership.role,
+      role: membership.role
     };
+  }
+
+  async deleteBoard(boardId: string, userId: string): Promise<void> {
+    const board = await this.boardRepository.getBoardWithMembers(boardId);
+    if (!board) throw new Error("Board not found");
+
+    await this.boardRepository.deleteBoard(boardId);
   }
 }

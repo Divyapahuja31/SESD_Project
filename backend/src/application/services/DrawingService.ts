@@ -71,9 +71,7 @@ export class DrawingService {
   }
 
   async clearAll(boardId: string, userId: string): Promise<void> {
-    const board = await this.boardService.getBoardDetails(boardId, userId);
-    if (board.role !== "owner") throw new Error("Only owner can clear board");
-    
+    await this.boardService.getBoardDetails(boardId, userId);
     this.stateManager.clearBoard(boardId);
     await this.drawingRepository.clearSnapshot(boardId);
   }
