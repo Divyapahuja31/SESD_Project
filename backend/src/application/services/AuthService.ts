@@ -1,5 +1,6 @@
 import { IUserRepository } from "../../core/interfaces/IUserRepository";
 import { User } from "../../core/entities/User";
+import { AppError } from "../../middleware/error.middleware";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
@@ -28,7 +29,7 @@ export class AuthService {
   async login(
     email: string,
     password: string
-  ): Promise<{ token: string }> {
+  ): Promise<{ token: string; id: string; email: string }> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new Error("Invalid email or password");
@@ -39,13 +40,13 @@ export class AuthService {
     }
 
     const token = this.generateToken(user.id);
-    return { token };
+    return { token, id: user.id, email: user.email };
   }
 
   async getProfile(userId: string): Promise<{ id: string; email: string }> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError(404, "Artist identity not found in database archive");
     }
     return { id: user.id, email: user.email };
   }
