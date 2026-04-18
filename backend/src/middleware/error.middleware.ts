@@ -21,8 +21,11 @@ export const errorHandler = (
     return;
   }
 
-  console.error(`[Unhandled Error] ${err.name}: ${err.message}`);
+  console.error(`[CRITICAL STUDIO ERROR] ${err.name}: ${err.message}`);
   if (err.stack) console.error(err.stack);
   
-  res.status(500).json({ error: "Internal server error" });
+  res.status(500).json({ 
+    error: "Studio Internal Engine Error", 
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+  });
 };

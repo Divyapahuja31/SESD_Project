@@ -39,4 +39,8 @@ boardRouter.post("/:id/invite", authMiddleware, (req, res, next) =>
   boardController.inviteMember(req, res, next)
 );
 
+boardRouter.delete("/:id", authMiddleware, (req, res, next) =>
+  boardController.deleteBoard(req, res, next)
+);
+
 export default boardRouter;

@@ -73,4 +73,10 @@ export class BoardRepository {
       })),
     };
   }
+
+  async deleteBoard(boardId: string): Promise<void> {
+    await prisma.board.delete({
+      where: { id: boardId },
+    });
+  }
 }

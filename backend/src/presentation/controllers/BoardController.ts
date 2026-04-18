@@ -91,6 +91,30 @@ export class BoardController {
       } else if (message.includes("Access denied")) {
         res.status(403).json({ error: message });
       } else {
+        res.status(500).json({ error: "Internal server error during invitation" });
+      }
+    }
+  }
+
+  async deleteBoard(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.userId;
+      const boardId = req.params.id as string;
+
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      await this.boardService.deleteBoard(boardId, userId);
+      res.status(200).json({ message: "Board deleted successfully" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "";
+      if (message === "Board not found") {
+        res.status(404).json({ error: message });
+      } else if (message.includes("Access denied")) {
+        res.status(403).json({ error: message });
+      } else {
         next(error);
       }
     }
