@@ -60,6 +60,7 @@ export class SocketManager {
       this.handleDraw(socket, userId);
       this.handleUndo(socket, userId);
       this.handleClear(socket, userId);
+      this.handleMouseMove(socket, userId);
 
       socket.on("disconnect", () => {
         console.log(`User disconnected: ${userId} (socket: ${socket.id})`);
@@ -90,7 +91,7 @@ export class SocketManager {
 
         socket.emit("joined-board", {
           boardId: board.id,
-          userId, // Essential for frontend to identify own strokes
+          userId, 
           title: board.title,
           role: board.role,
           message: `Joined board "${board.title}" as ${board.role}`,
@@ -136,7 +137,7 @@ export class SocketManager {
 
         console.log(`[Socket] Broadcasting draw from ${userId} on board ${boardId} (tool: ${tool})`);
 
-        socket.to(boardId).emit("draw", {
+        this.io.to(boardId).emit("draw", {
           id: strokeRecord.id,
           userId,
           points,
@@ -200,6 +201,16 @@ export class SocketManager {
         const message = error instanceof Error ? error.message : "Failed to clear board";
         socket.emit("error-message", { event: "clear-board", message });
       }
+    });
+  }
+
+  private handleMouseMove(socket: Socket, userId: string): void {
+    socket.on("mouse-move", (data: { boardId: string; x: number; y: number }) => {
+      socket.volatile.to(data.boardId).emit("cursor-update", {
+        userId,
+        x: data.x,
+        y: data.y,
+      });
     });
   }
 
