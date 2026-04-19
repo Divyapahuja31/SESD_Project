@@ -12,6 +12,16 @@ export class BoardService {
     userId: string,
     title: string
   ): Promise<{ id: string; title: string }> {
+    // Prevent duplicate board names for the same user
+    const existingBoards = await this.boardRepository.getBoardsByUser(userId);
+    const isDuplicate = existingBoards.some(
+      (b) => b.title.toLowerCase() === title.trim().toLowerCase()
+    );
+
+    if (isDuplicate) {
+      throw new Error("A repository with this title already exists in your workspace.");
+    }
+
     const boardId = uuidv4();
 
     const board = await this.boardRepository.createBoard({
