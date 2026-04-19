@@ -212,24 +212,13 @@ export default function LandingPage() {
             </p>
 
             {/* CTA */}
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              <button 
-                onClick={handleStartDrawing}
-                className="bg-[#1982C4] hover:bg-[#FF595E] text-white px-14 py-6 rounded-full text-xl font-black transition-all shadow-[0_15px_30px_rgba(25,130,196,0.3)] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(255,89,94,0.4)] flex items-center justify-center gap-4 group"
-              >
-                {isLoggedIn ? "Go to Dashboard" : "Start Drawing Now"}
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-2 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </button>
-              
-              {isLoggedIn && (
-                <button 
-                  onClick={handleLogout}
-                  className="bg-[#100B00] hover:bg-white hover:text-[#100B00] text-white px-14 py-6 rounded-full text-xl font-black transition-all shadow-[0_15px_30px_rgba(0,0,0,0.2)] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] uppercase tracking-widest border-4 border-transparent hover:border-[#100B00]"
-                >
-                  Logout
-                </button>
-              )}
-            </div>
+            <button 
+              onClick={handleStartDrawing}
+              className="bg-[#1982C4] hover:bg-[#FF595E] text-white px-14 py-6 rounded-full text-xl font-black transition-all shadow-[0_15px_30px_rgba(25,130,196,0.3)] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(255,89,94,0.4)] flex items-center justify-center gap-4 group"
+            >
+              Start Drawing Now
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-2 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
             
           </motion.div>
         </main>
