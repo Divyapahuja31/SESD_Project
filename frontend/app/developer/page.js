@@ -70,13 +70,23 @@ export default function Developer() {
                  Architect behind SyncSketch. Specializing in high-performance web sockets, brutalist interfaces, and scalable serverless architecture.
                </p>
 
-               <div className="flex gap-4">
-                 <button className="bg-[#FFCA3A] text-[#100B00] px-8 py-4 border-4 border-[#100B00] rounded-2xl font-black shadow-[4px_4px_0_#100B00] hover:-translate-y-1 hover:shadow-[6px_6px_0_#100B00] active:translate-y-0 active:shadow-[0px_0px_0_#100B00] transition-all">
-                   CONTACT
-                 </button>
-                 <button className="bg-white text-[#100B00] px-8 py-4 border-4 border-[#100B00] rounded-2xl font-black shadow-[4px_4px_0_#100B00] hover:-translate-y-1 hover:shadow-[6px_6px_0_#100B00] active:translate-y-0 active:shadow-[0px_0px_0_#100B00] transition-all">
+               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                 <a 
+                   href="https://www.linkedin.com/in/divya-pahuja25/" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="bg-[#FFCA3A] text-[#100B00] px-8 py-4 border-4 border-[#100B00] rounded-2xl font-black shadow-[4px_4px_0_#100B00] hover:-translate-y-1 hover:shadow-[6px_6px_0_#100B00] active:translate-y-0 active:shadow-[0px_0px_0_#100B00] transition-all text-center"
+                 >
+                   LINKEDIN
+                 </a>
+                 <a 
+                   href="https://github.com/Divyapahuja31" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="bg-white text-[#100B00] px-8 py-4 border-4 border-[#100B00] rounded-2xl font-black shadow-[4px_4px_0_#100B00] hover:-translate-y-1 hover:shadow-[6px_6px_0_#100B00] active:translate-y-0 active:shadow-[0px_0px_0_#100B00] transition-all text-center"
+                 >
                    GITHUB
-                 </button>
+                 </a>
                </div>
             </div>
             
