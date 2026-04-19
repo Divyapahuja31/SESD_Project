@@ -11,15 +11,7 @@ export default function Dashboard() {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [user, setUser] = useState(() => {
-    if (typeof window !== "undefined") {
-      const cachedUser = localStorage.getItem("user_identity");
-      if (cachedUser) {
-        try { return JSON.parse(cachedUser); } catch (e) { return null; }
-      }
-    }
-    return null;
-  });
+  const [user, setUser] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, boardId: null });
@@ -32,6 +24,16 @@ export default function Dashboard() {
       window.location.href = "/login";
       return;
     }
+
+    // Load from cache immediately on client side
+    const cached = localStorage.getItem("studio_boards_cache");
+    if (cached) {
+      setBoards(JSON.parse(cached));
+      setLoading(false);
+    }
+
+    const cachedUser = localStorage.getItem("user_identity");
+    if (cachedUser) setUser(JSON.parse(cachedUser));
 
     const init = async () => {
       await Promise.all([fetchBoards(), fetchProfile()]);
@@ -53,7 +55,9 @@ export default function Dashboard() {
   const fetchBoards = async () => {
     try {
       const data = await api("/api/boards");
-      setBoards(data.boards || []);
+      const boardsList = data.boards || [];
+      setBoards(boardsList);
+      localStorage.setItem("studio_boards_cache", JSON.stringify(boardsList));
     } catch (err) {
       if (err.message === "Unauthorized") window.location.href = "/login";
     }
@@ -340,7 +344,9 @@ function MetricCard({ label, value, color }) {
        <p className="text-[10px] font-black text-[#100B00]/40 uppercase tracking-[0.3em] group-hover:text-white/40">{label}</p>
        <div className="flex items-center gap-3">
           <div className="w-2 h-8 rounded-full" style={{ backgroundColor: color }} />
-          <h4 className="text-4xl font-black text-[#100B00] tracking-tighter group-hover:text-white uppercase">{value}</h4>
+          <h4 suppressHydrationWarning className="text-4xl font-black text-[#100B00] tracking-tighter group-hover:text-white uppercase">
+            {value}
+          </h4>
        </div>
     </div>
   );
