@@ -29,6 +29,13 @@ export default function LandingPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_identity");
+    document.cookie = "artist_name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    window.location.reload();
+  };
+
   if (!mounted) return null;
 
   return (
@@ -101,9 +108,14 @@ export default function LandingPage() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
                   {isLoggedIn ? (
-                    <Link href="/dashboard" className="h-32 bg-[#FFCA3A] hover:bg-white text-[#100B00] font-black text-3xl sm:text-4xl rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all hover:scale-[1.03] hover:-translate-y-2 group sm:col-span-2">
-                       <span className="group-hover:tracking-widest transition-all">Go to Dashboard</span>
-                    </Link>
+                    <div className="sm:col-span-2 grid grid-cols-3 gap-6">
+                      <Link href="/dashboard" className="col-span-2 h-32 bg-[#FFCA3A] hover:bg-white text-[#100B00] font-black text-3xl sm:text-4xl rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all hover:scale-[1.03] hover:-translate-y-2 group">
+                         <span className="group-hover:tracking-widest transition-all uppercase tracking-tighter">Go to Dashboard</span>
+                      </Link>
+                      <button onClick={handleLogout} className="h-32 bg-[#100B00] hover:bg-[#FF595E] text-white font-black text-2xl sm:text-3xl rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all hover:scale-[1.03] hover:-translate-y-2 group">
+                         <span className="group-hover:tracking-tighter transition-all uppercase">Logout</span>
+                      </button>
+                    </div>
                   ) : (
                     <>
                       <Link href="/login" className="h-32 bg-[#FFCA3A] hover:bg-white text-[#100B00] font-black text-3xl sm:text-4xl rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all hover:scale-[1.03] hover:-translate-y-2 group">
@@ -200,13 +212,24 @@ export default function LandingPage() {
             </p>
 
             {/* CTA */}
-            <button 
-              onClick={handleStartDrawing}
-              className="bg-[#1982C4] hover:bg-[#FF595E] text-white px-14 py-6 rounded-full text-xl font-black transition-all shadow-[0_15px_30px_rgba(25,130,196,0.3)] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(255,89,94,0.4)] flex items-center justify-center gap-4 group"
-            >
-              Start Drawing Now
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-2 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <button 
+                onClick={handleStartDrawing}
+                className="bg-[#1982C4] hover:bg-[#FF595E] text-white px-14 py-6 rounded-full text-xl font-black transition-all shadow-[0_15px_30px_rgba(25,130,196,0.3)] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(255,89,94,0.4)] flex items-center justify-center gap-4 group"
+              >
+                {isLoggedIn ? "Go to Dashboard" : "Start Drawing Now"}
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-2 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+              
+              {isLoggedIn && (
+                <button 
+                  onClick={handleLogout}
+                  className="bg-[#100B00] hover:bg-white hover:text-[#100B00] text-white px-14 py-6 rounded-full text-xl font-black transition-all shadow-[0_15px_30px_rgba(0,0,0,0.2)] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] uppercase tracking-widest border-4 border-transparent hover:border-[#100B00]"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
             
           </motion.div>
         </main>
