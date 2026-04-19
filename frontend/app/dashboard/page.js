@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, boardId: null });
+  const [toast, setToast] = useState({ show: false, message: "", type: "error" });
 
   useEffect(() => {
     setMounted(true);
@@ -63,6 +64,12 @@ export default function Dashboard() {
     if (!title) return;
     setCreating(true);
     try {
+      // Client-side quick check
+      const isDuplicate = boards.some(b => b.title.toLowerCase() === title.trim().toLowerCase());
+      if (isDuplicate) {
+        throw new Error("A repository with this title already exists in your workspace.");
+      }
+
       await api("/api/boards", {
         method: "POST",
         body: JSON.stringify({ title }),
@@ -70,8 +77,9 @@ export default function Dashboard() {
       setTitle("");
       setIsModalOpen(false);
       fetchBoards();
+      setToast({ show: true, message: "Canvas Ready", type: "success" });
     } catch (err) {
-      alert(err.message);
+      setToast({ show: true, message: err.message, type: "error" });
     } finally {
       setCreating(false);
     }
@@ -88,9 +96,10 @@ export default function Dashboard() {
     try {
       await api(`/api/boards/${deleteModal.boardId}`, { method: "DELETE" });
       setDeleteModal({ isOpen: false, boardId: null });
+      setToast({ show: true, message: "Canvas Deleted", type: "success" });
       fetchBoards();
     } catch (err) {
-      alert(err.message);
+      setToast({ show: true, message: err.message, type: "error" });
     }
   };
 
@@ -154,7 +163,7 @@ export default function Dashboard() {
           
           {/* STUDIO METRICS (PREMIUM ADDITION) */}
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-             <MetricCard label="Total Projects" value={boards.length} color="#1982C4" />
+             <MetricCard label="Total Canvases" value={boards.length} color="#1982C4" />
              <MetricCard label="Active Personnel" value="01" color="#FF595E" />
           </section>
 
@@ -210,12 +219,12 @@ export default function Dashboard() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-[#100B00]/80 backdrop-blur-xl" />
             <motion.div 
               initial={{ scale: 0.8, opacity: 0, y: 100 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0, y: 100 }}
-              className="bg-white p-14 rounded-[4rem] border-8 border-[#100B00] shadow-[40px_40px_0_#FF595E] w-full max-w-2xl relative z-10"
+              className="bg-white p-14 rounded-[4rem] border-8 border-[#100B00] shadow-[40px_40px_0_#1982C4] w-full max-w-2xl relative z-10"
             >
               <div className="flex justify-between items-start mb-12">
                  <div className="space-y-2">
-                   <h3 className="text-6xl font-black text-[#100B00] uppercase tracking-tighter leading-none">New Project</h3>
-                   <p className="text-[11px] font-black text-[#FF595E] uppercase tracking-[0.5em] ml-1">Initiating Digital Repository</p>
+                   <h3 className="text-6xl font-black text-[#100B00] uppercase tracking-tighter leading-none">New Canvas</h3>
+                   <p className="text-[11px] font-black text-[#100B00]/40 uppercase tracking-[0.5em] ml-1">Preparing Creative Surface</p>
                  </div>
                  <button onClick={() => setIsModalOpen(false)} className="w-16 h-16 bg-[#100B00] text-white rounded-[1.5rem] flex items-center justify-center hover:rotate-180 transition-all duration-500 shadow-lg">
                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -224,9 +233,18 @@ export default function Dashboard() {
 
               <form onSubmit={handleCreateBoard} className="space-y-10">
                 <div className="space-y-4">
-                  <label className="text-xs font-black text-[#100B00] uppercase tracking-widest ml-3">Project Title</label>
+                  <div className="flex justify-between items-end px-3">
+                    <label className="text-xs font-black text-[#100B00] uppercase tracking-widest">Canvas Title</label>
+                    {boards.some(b => b.title.toLowerCase() === title.trim().toLowerCase()) && title.trim() !== "" && (
+                      <span className="text-[10px] font-black text-[#FF595E] animate-bounce uppercase tracking-widest italic">! Title Already In Use</span>
+                    )}
+                  </div>
                   <input 
-                    className="w-full bg-[#E9E5D8]/40 border-8 border-[#100B00] rounded-[2.5rem] px-10 py-8 text-3xl font-black text-[#100B00] placeholder:text-[#100B00]/10 focus:outline-none focus:bg-white transition-all shadow-inner uppercase tracking-tighter"
+                    className={`w-full bg-[#E9E5D8]/40 border-8 rounded-[2.5rem] px-10 py-8 text-3xl font-black transition-all shadow-inner uppercase tracking-tighter ${
+                      boards.some(b => b.title.toLowerCase() === title.trim().toLowerCase()) && title.trim() !== ""
+                      ? "border-[#FF595E] text-[#FF595E] focus:bg-[#FF595E]/5" 
+                      : "border-[#100B00] text-[#100B00] focus:bg-white"
+                    }`}
                     placeholder="E.G., ARTIFICIAL HORIZON"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -234,8 +252,8 @@ export default function Dashboard() {
                     autoFocus
                   />
                 </div>
-                <button type="submit" className="w-full bg-[#100B00] text-[#FFCA3A] font-black text-3xl py-8 rounded-[2rem] border-4 border-transparent hover:bg-[#FF595E] hover:text-white transition-all shadow-[10px_10px_0_#FFCA3A] hover:shadow-[15px_15px_0_#100B00] active:translate-y-2 active:shadow-none uppercase tracking-tighter">
-                  {creating ? "INITIALIZING..." : "LAUNCH REPOSITORY"}
+                <button type="submit" className="w-full bg-[#100B00] text-[#FFCA3A] font-black text-3xl py-8 rounded-[2rem] border-4 border-transparent hover:bg-[#1982C4] hover:text-white transition-all shadow-[10px_10px_0_#FFCA3A] hover:shadow-[15px_15px_0_#100B00] active:translate-y-2 active:shadow-none uppercase tracking-tighter">
+                  {creating ? "INITIALIZING..." : "Initialize Canvas"}
                 </button>
               </form>
             </motion.div>
@@ -284,6 +302,32 @@ export default function Dashboard() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* BREATHING TOAST SYSTEM */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div 
+            initial={{ y: 50, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            onAnimationComplete={() => {
+               setTimeout(() => setToast({ ...toast, show: false }), 3000);
+            }}
+            className={`fixed bottom-12 left-1/2 -translate-x-1/2 z-[300] px-10 py-5 rounded-2xl border-4 border-[#100B00] shadow-[8px_8px_0_#100B00] flex items-center gap-4 ${
+               toast.type === "error" ? "bg-[#FF595E] text-white" : "bg-[#FFCA3A] text-[#100B00]"
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center border-2 border-white/20">
+               {toast.type === "error" ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+               ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+               )}
+            </div>
+            <span className="font-black uppercase tracking-tighter text-sm">{toast.message}</span>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -367,7 +411,7 @@ function BoardCard({ board, onDelete, index }) {
        
        <div className="mt-auto flex items-end justify-between relative z-10">
           <div className="space-y-1">
-             <p className="text-[10px] font-black text-[#100B00]/30 uppercase tracking-[0.2em]">Project Archive</p>
+             <p className="text-[10px] font-black text-[#100B00]/30 uppercase tracking-[0.2em]">Creative Canvas</p>
              <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#1982C4] animate-pulse" />
                 <p className="text-[14px] font-black text-[#100B00] tracking-tighter">ID: {board.id.substring(0, 10).toUpperCase()}</p>
